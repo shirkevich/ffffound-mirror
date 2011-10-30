@@ -7,21 +7,13 @@ require 'hpricot'
 require 'json'
 require 'open-uri'
 require 'sqlite3'
+require 'sequel'
 require 'time'
 require 'date'
 
 def populate_db(db, user, type)
   domain = "http://ffffound.com/"
   offset = 0
-
-  images_sql = <<EOS
-  INSERT OR REPLACE INTO 
-      images (id, url, src, title, orig_url, orig_src, count, date, related) 
-      values (:id, :ffffound_url, :ffffound_img, :title, :orig_url, :orig_img, :count, :date, :rel)
-EOS
-
-  images_ins  = db.prepare(images_sql)
-  # related_ins = db.prepare( "insert into related values (?, ?, ?)" )
   
   img = []
   
@@ -93,14 +85,14 @@ EOS
         # TODO normalised table for related IDs
       end
     
-      info[:rel] = rel.join(",")
+      info[:related] = rel.join(",")
       img.unshift(info)
   
       # put in db
       begin
-        images_ins.bind_params(info)
-        images_ins.execute
-      rescue
+        db[:images].insert(info)
+      rescue Exception => e
+        puts "Insert failed, reason: #{e.inspect}"
       end
   
     end
@@ -113,30 +105,33 @@ EOS
 end
 
 def create_db(db)
-  images = <<EOC
-    CREATE TABLE IF NOT EXISTS
-        images  (id TEXT PRIMARY KEY,
-                 url TEXT,
-                 src TEXT,
-                 title TEXT,
-                 orig_url TEXT,
-                 orig_src TEXT,
-                 date INTEGER,
-                 count INTEGER,
-                 related TEXT,
-                 posted BOOL);
-EOC
-  
-  related = <<EOC
-    CREATE TABLE IF NOT EXISTS
-        related  (id INTEGER PRIMARY KEY,
-                  source INTEGER
-                  related INTEGER);
-EOC
-  
-  db.execute(images)
-  db.execute(related)
-  
+  begin
+    db.create_table :images do
+      column :id, :text, :primary_key => true
+      column :ffffound_url, :text
+      column :ffffound_img, :text
+      column :title, :text
+      column :orig_url, :text
+      column :orig_img, :text
+      column :date, :text
+      column :count, :text
+      column :related, :text
+      column :posted, :boolean
+    end 
+  rescue Exception => e
+    puts e.inspect
+  end
+
+  begin
+    db.create_table :related do
+      primary_key :id
+      columt :source, :integer
+      column :related, :integer
+    end 
+  rescue Exception => e
+    puts e.inspect
+  end
+
   return true
 end
 
@@ -174,8 +169,7 @@ rescue
 end
 
 path = 'db/ffffound-'+user+'.db' # ick
-db = SQLite3::Database.new(path)
-
+db = Sequel.sqlite(path)
 create_db(db)
 populate_db(db, user, type)
 exit
