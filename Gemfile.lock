@@ -1,0 +1,17 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    etc (0.2.0)
+    hpricot (0.8.4)
+    json (1.6.1)
+    sqlite3 (1.3.4)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.0.0)
+  etc
+  hpricot
+  json
+  sqlite3
