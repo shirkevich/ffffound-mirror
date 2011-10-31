@@ -72,7 +72,7 @@ def populate_db(db, user, type)
       info[:ffffound_url] = ffffound_url
       info[:ffffound_img] = ffffound_img
     
-      download_file(ffffound_img, id)
+      #download_file(ffffound_img, id)
     
       # might as well get related asset IDs
       rel = Array.new
@@ -90,7 +90,7 @@ def populate_db(db, user, type)
   
       # put in db
       begin
-        db[:images].insert(info)
+        db[:images].insert(info) unless db[:images][:id => info[:id]]
       rescue Exception => e
         puts "Insert failed, reason: #{e.inspect}"
       end
@@ -119,17 +119,17 @@ def create_db(db)
       column :posted, :boolean
     end 
   rescue Exception => e
-    puts e.inspect
+    puts "Problem with images table: " + e.inspect
   end
 
   begin
     db.create_table :related do
       primary_key :id
-      columt :source, :integer
+      column :source, :integer
       column :related, :integer
     end 
   rescue Exception => e
-    puts e.inspect
+    puts "Problem with related table:" + e.inspect
   end
 
   return true
